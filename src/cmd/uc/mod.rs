@@ -4,6 +4,7 @@ use std::io::Write;
 
 use handlebars::Handlebars;
 
+#[derive(Debug,Clone)]
 pub struct UseCaseInput {
     pub package: String,
     pub name: String,
@@ -31,7 +32,7 @@ pub enum GenerateUseCaseError {
     Error
 }
 
-pub fn generate(use_case_input: UseCaseInput) -> Result<(File, String), GenerateUseCaseError> {
+pub fn generate(use_case_input: &UseCaseInput) -> Result<(File, String), GenerateUseCaseError> {
     let handlebars = register_template().map_err(|_| GenerateUseCaseError::TemplateError)?;
     let mut data = BTreeMap::new();
     data.insert("package_name".to_string(), use_case_input.package.clone());
