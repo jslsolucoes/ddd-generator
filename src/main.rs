@@ -1,5 +1,7 @@
 use clap::{Args, Parser, Subcommand};
 
+use crate::cmd::uc::GenerateUseCaseError;
+
 mod cmd;
 
 #[derive(Parser)]
@@ -25,7 +27,7 @@ struct UseCaseArgs {
     fields: Vec<String>,
 }
 
-fn main() -> Result<(), handlebars::RenderError> {
+fn main() -> Result<(), GenerateUseCaseError> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -35,9 +37,24 @@ fn main() -> Result<(), handlebars::RenderError> {
                 name: use_case_args.name.clone(),
                 fields: use_case_args.fields.clone(),
             };
-            let result = cmd::uc::generate(use_case_input)?;
+            let result = cmd::uc::generate(use_case_input);
             match result {
-                (_, file_name) => println!("Created file: {:?}", file_name)
+                Ok((_, file_name)) => {
+                    println!("File {} created", file_name);
+                }
+                Err(err) => {
+                    match err {
+                        GenerateUseCaseError::RenderError => {
+                            println!("Error rendering template {:?}", err)
+                        }
+                        GenerateUseCaseError::TemplateError => {
+                            println!("Error registering template {:?}", err)
+                        }
+                        GenerateUseCaseError::Error => {
+                            println!("Error creating file {:?}", err)
+                        }
+                    }
+                }
             }
         }
     }
