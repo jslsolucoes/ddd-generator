@@ -1,0 +1,23 @@
+
+package {{package_name}};
+
+public final class {{class_name}} {
+
+    @Autowired
+    public {{class_name}}() {
+
+    }
+
+    public {{class_name}}Output execute(@Valid final {{class_name}}Input input) {
+        return new {{class_name}}Output();
+    }
+
+    public record {{class_name}}Input() {
+
+    }
+
+    public record {{class_name}}Output() {
+
+    }
+
+}
