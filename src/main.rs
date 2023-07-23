@@ -3,6 +3,7 @@ use clap::{Args, Parser, Subcommand};
 use crate::cmd::uc::GenerateUseCaseError;
 
 mod cmd;
+mod common;
 
 #[derive(Parser)]
 struct Cli {

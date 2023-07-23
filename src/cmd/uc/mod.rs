@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 
 use handlebars::Handlebars;
+use crate::common;
 
 #[derive(Debug, Clone)]
 pub struct GenerateUseCaseInput {
@@ -51,16 +52,10 @@ fn register_template() -> Result<Handlebars<'static>, handlebars::TemplateError>
     Ok(handlebars)
 }
 
-fn uncapitalize(value: String) -> String {
-    let mut uncapitalize_value = value.clone();
-    uncapitalize_value.replace_range(0..1, &value[0..1].to_lowercase());
-    uncapitalize_value
-}
-
 fn generate_uc(handlebars: &Handlebars, use_case_input: &GenerateUseCaseInput) -> Result<GenerateUseCaseFile, GenerateUseCaseError> {
     let package_name = use_case_input.package.clone();
     let class_name = use_case_input.name.clone();
-    let class_name_field = uncapitalize(class_name.clone());
+    let class_name_field = common::str::uncapitalize(class_name.clone());
 
     let mut data = BTreeMap::new();
     data.insert("package_name".to_string(), package_name);
@@ -80,7 +75,7 @@ fn generate_uc(handlebars: &Handlebars, use_case_input: &GenerateUseCaseInput) -
 fn generate_uc_controller(handlebars: &Handlebars, use_case_input: &GenerateUseCaseInput) -> Result<GenerateUseCaseFile, GenerateUseCaseError> {
     let package_name = use_case_input.package.clone();
     let class_name = use_case_input.name.clone();
-    let class_name_field = uncapitalize(class_name.clone());
+    let class_name_field = common::str::uncapitalize(class_name.clone());
 
     let mut data = BTreeMap::new();
     data.insert("package_name".to_string(), package_name);
