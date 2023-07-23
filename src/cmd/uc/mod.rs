@@ -4,42 +4,104 @@ use std::io::Write;
 
 use handlebars::Handlebars;
 
-#[derive(Debug,Clone)]
-pub struct UseCaseInput {
+#[derive(Debug, Clone)]
+pub struct GenerateUseCaseInput {
     pub package: String,
     pub name: String,
     pub fields: Vec<String>,
 }
 
-const UC_TEMPLATE_CONTENT: &str = include_str!("uc.hbs");
+#[derive(Debug)]
+pub struct GenerateUseCaseOutput {
+    pub files: Vec<GenerateUseCaseFile>,
+}
 
-fn register_template() -> Result<Handlebars<'static>, handlebars::TemplateError> {
-    let template_name = "uc";
-
-    let mut handlebars = Handlebars::new();
-    if handlebars.has_template(template_name) {
-        println!("Template {} already registered", template_name);
-        return Ok(handlebars);
-    };
-    handlebars.register_template_string(template_name, UC_TEMPLATE_CONTENT)?;
-    Ok(handlebars)
+#[derive(Debug)]
+pub struct GenerateUseCaseFile {
+    pub file: File,
+    pub file_name: String,
 }
 
 #[derive(Debug)]
 pub enum GenerateUseCaseError {
     RenderError,
     TemplateError,
-    Error
+    Error,
 }
 
-pub fn generate(use_case_input: &UseCaseInput) -> Result<(File, String), GenerateUseCaseError> {
-    let handlebars = register_template().map_err(|_| GenerateUseCaseError::TemplateError)?;
+const UC_TEMPLATE_NAME: &str = "uc";
+const UC_TEMPLATE_CONTENT: &str = include_str!("uc.hbs");
+const UC_CONTROLLER_TEMPLATE_NAME: &str = "uc_controller";
+const UC_CONTROLLER_TEMPLATE_CONTENT: &str = include_str!("uc_controller.hbs");
+
+fn register_template() -> Result<Handlebars<'static>, handlebars::TemplateError> {
+    let templates = vec![
+        (UC_TEMPLATE_NAME, UC_TEMPLATE_CONTENT),
+        (UC_CONTROLLER_TEMPLATE_NAME, UC_CONTROLLER_TEMPLATE_CONTENT),
+    ];
+
+    let mut handlebars = Handlebars::new();
+
+    for (template_name, template_content) in templates {
+        if !handlebars.has_template(template_name) {
+            handlebars.register_template_string(template_name, template_content)?;
+        };
+    }
+
+    Ok(handlebars)
+}
+
+fn uncapitalize(value: String) -> String {
+    let mut uncapitalize_value = value.clone();
+    uncapitalize_value.replace_range(0..1, &value[0..1].to_lowercase());
+    uncapitalize_value
+}
+
+fn generate_uc(handlebars: &Handlebars, use_case_input: &GenerateUseCaseInput) -> Result<GenerateUseCaseFile, GenerateUseCaseError> {
+    let package_name = use_case_input.package.clone();
+    let class_name = use_case_input.name.clone();
+    let class_name_field = uncapitalize(class_name.clone());
+
     let mut data = BTreeMap::new();
-    data.insert("package_name".to_string(), use_case_input.package.clone());
-    data.insert("class_name".to_string(), use_case_input.name.clone());
-    let rendered = handlebars.render("uc", &data).map_err(|_| GenerateUseCaseError::RenderError)?;
+    data.insert("package_name".to_string(), package_name);
+    data.insert("class_name".to_string(), class_name);
+    data.insert("class_name_field".to_string(), class_name_field);
+
+    let rendered = handlebars.render(UC_TEMPLATE_NAME, &data).map_err(|_| GenerateUseCaseError::RenderError)?;
     let file_name = format!("{}.java", use_case_input.name.clone());
     let mut file = File::create(&file_name).map_err(|_| GenerateUseCaseError::Error)?;
     file.write_all(rendered.as_bytes()).map_err(|_| GenerateUseCaseError::Error)?;
-    Ok((file, file_name))
+    Ok(GenerateUseCaseFile {
+        file,
+        file_name,
+    })
+}
+
+fn generate_uc_controller(handlebars: &Handlebars, use_case_input: &GenerateUseCaseInput) -> Result<GenerateUseCaseFile, GenerateUseCaseError> {
+    let package_name = use_case_input.package.clone();
+    let class_name = use_case_input.name.clone();
+    let class_name_field = uncapitalize(class_name.clone());
+
+    let mut data = BTreeMap::new();
+    data.insert("package_name".to_string(), package_name);
+    data.insert("class_name".to_string(), class_name);
+    data.insert("class_name_field".to_string(), class_name_field);
+
+    let rendered = handlebars.render(UC_CONTROLLER_TEMPLATE_NAME, &data).map_err(|_| GenerateUseCaseError::RenderError)?;
+    let file_name = format!("{}Controller.java", use_case_input.name.clone());
+    let mut file = File::create(&file_name).map_err(|_| GenerateUseCaseError::Error)?;
+    file.write_all(rendered.as_bytes()).map_err(|_| GenerateUseCaseError::Error)?;
+    Ok(GenerateUseCaseFile {
+        file,
+        file_name,
+    })
+}
+
+pub fn generate(use_case_input: &GenerateUseCaseInput) -> Result<GenerateUseCaseOutput, GenerateUseCaseError> {
+    let handlebars = register_template().map_err(|_| GenerateUseCaseError::TemplateError)?;
+    let uc = generate_uc(&handlebars, &use_case_input)?;
+    let uc_controller = generate_uc_controller(&handlebars, &use_case_input)?;
+    Ok(GenerateUseCaseOutput {
+        files: vec![uc, uc_controller]
+    })
 }

@@ -1,0 +1,30 @@
+
+package {{package_name}};
+
+@RestController
+@RequestMapping(ApiInfo.V1_VERSION)
+public final class {{class_name}}Controller {
+
+
+    private final {{class_name}} {{class_name_field}};
+
+    @Autowired
+    public {{class_name}}Controller(final {{class_name}} {{class_name_field}}) {
+        this.{{class_name_field}} = {{class_name_field}};
+    }
+
+    @GetMapping
+    public {{class_name}}ControllerResponse execute() {
+
+        var {{class_name_field}}Input = new {{class_name}}.{{class_name}}Input();
+        var {{class_name_field}}Output = {{class_name_field}}.execute({{class_name_field}}Input);
+
+        return new {{class_name}}ControllerResponse();
+    }
+
+
+    public record {{class_name}}ControllerResponse() {
+
+    }
+
+}
