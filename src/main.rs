@@ -1,12 +1,13 @@
 use clap::{Args, Parser, Subcommand};
 
-use crate::cmd::uc::GenerateUseCaseError;
-
 mod cmd;
 mod common;
 
 #[derive(Parser)]
 struct Cli {
+    #[arg(short = 'm', long = "mode")]
+    #[clap(value_enum, default_value_t = cmd::Mode::Execute)]
+    mode: cmd::Mode,
     #[command(subcommand)]
     command: Commands,
 }
@@ -28,12 +29,13 @@ struct UseCaseArgs {
     fields: Vec<String>,
 }
 
-fn main() -> Result<(), GenerateUseCaseError> {
+fn main() -> Result<(), cmd::uc::GenerateUseCaseError> {
     let cli = Cli::parse();
 
     match &cli.command {
         Commands::UseCase(use_case_args) => {
             let use_case_input = cmd::uc::GenerateUseCaseInput {
+                mode: cli.mode.clone(),
                 package: use_case_args.package.clone(),
                 name: use_case_args.name.clone(),
                 fields: use_case_args.fields.clone(),
@@ -41,17 +43,22 @@ fn main() -> Result<(), GenerateUseCaseError> {
             let result = cmd::uc::generate(&use_case_input);
             match result {
                 Ok(output) => {
-                    println!("File {} created", output.files[0].file_name);
+                    match use_case_input.mode {
+                        cmd::Mode::Simulate => {
+                            return Ok(());
+                        }
+                        cmd::Mode::Execute => println!("File {} created", output.files[0].file_name)
+                    }
                 }
                 Err(err) => {
                     match err {
-                        GenerateUseCaseError::RenderError => {
+                        cmd::uc::GenerateUseCaseError::RenderError => {
                             println!("Error rendering template {:?}", err)
                         }
-                        GenerateUseCaseError::TemplateError => {
+                        cmd::uc::GenerateUseCaseError::TemplateError => {
                             println!("Error registering template {:?}", err)
                         }
-                        GenerateUseCaseError::Error => {
+                        cmd::uc::GenerateUseCaseError::Error => {
                             println!("Error creating file {:?}", err)
                         }
                     }
